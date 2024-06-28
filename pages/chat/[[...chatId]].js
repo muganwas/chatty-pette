@@ -1,10 +1,20 @@
 import Head from 'next/head';
+import Link from 'next/link';
+import { useUser } from '@auth0/nextjs-auth0/client';
 
 export default function Chat() {
-    return <div>
+    const { user } = useUser();
+    return <>
         <Head>
-            <title>Welcome to the ChatGPT starter</title>
+            <title>New Chat</title>
         </Head>
-        <h1>Welcome to the chat id page</h1>
-    </div>;
+        <div className='grid h-screen grid-cols-[260px_1fr]'>
+            <div>chat bar</div>
+            <div className='flex flex-col bg-gray-600'>
+                <div className='flex-1'></div>
+                <footer className='bg-gray-800 p-10'>Footer</footer>
+            </div>
+            {/* {!!user && <Link href="/api/auth/logout">Logout</Link>} */}
+        </div>
+    </>;
 }

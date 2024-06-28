@@ -1,6 +1,8 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { getSession } from '@auth0/nextjs-auth0';
+import { redirect } from 'next/dist/server/api-utils';
 
 export default function Home() {
   const { isLoading, error, user } = useUser();
@@ -16,8 +18,17 @@ export default function Home() {
           <Link className='rounded-md bg-emerald-500 px-4 py-2 text-white hover:bg-emerald-600' href="/api/auth/login">Login</Link>
           <Link className='rounded-md bg-emerald-500 px-4 py-2 text-white hover:bg-emerald-600' href="/api/auth/signup">Signup</Link>
         </>}
-        {!!user && <Link href="/api/auth/logout">Logout</Link>}
       </div>
     </div>
   </>
 };
+
+export const getServerSideProps = async (ctx) => {
+  const session = await getSession(ctx.req, ctx.res);
+  if (!!session) {
+    return {
+      redirect: { destination: "/chat" }
+    };
+  }
+  return { props: {} };
+}
