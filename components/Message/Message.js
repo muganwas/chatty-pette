@@ -1,6 +1,7 @@
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { faRobot } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import ReactMarkDown from 'react-markdown';
 import Image from "next/image";
 export const Message = ({ role, content }) => {
     const { user } = useUser();
@@ -14,6 +15,10 @@ export const Message = ({ role, content }) => {
                     </div>
             }
         </div>
-        <div>{content}</div>
+        <div className="prose prose-invert">
+            <ReactMarkDown>
+                {content}
+            </ReactMarkDown>
+        </div>
     </div>
 }

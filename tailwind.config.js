@@ -8,5 +8,7 @@ module.exports = {
     './src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {},
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography')
+  ],
 };
