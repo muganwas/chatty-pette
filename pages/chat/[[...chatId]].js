@@ -25,32 +25,23 @@ export default function Chat() {
 
         // setChatMessage("");
         setGeneratingResponse(true);
-        const response = await fetch("/api/chat/create_new_chat", {
-            method: "POST",
+        const response = await fetch('/api/chat/send_message', {
+            method: 'POST',
             headers: {
                 "content-type": "application/json"
             },
-            body: JSON.stringify({ message: chatMessage })
+            body: JSON.stringify({
+                message: chatMessage
+            })
         });
-        const json = await response.json();
-        console.log("New chat ", json)
-        // const response = await fetch('/api/chat/send_message', {
-        //     method: 'POST',
-        //     headers: {
-        //         "content-type": "application/json"
-        //     },
-        //     body: JSON.stringify({
-        //         message: chatMessage
-        //     })
-        // });
-        // const data = response.body;
-        // if (!data) {
-        //     return;
-        // }
-        // const reader = data.getReader();
-        // await streamReader(reader, (message) => {
-        //     setincomingMessage(s => `${s}${message.content}`);
-        // });
+        const data = response.body;
+        if (!data) {
+            return;
+        }
+        const reader = data.getReader();
+        await streamReader(reader, (message) => {
+            setincomingMessage(s => `${s}${message.content}`);
+        });
         setGeneratingResponse(false);
     }
 
