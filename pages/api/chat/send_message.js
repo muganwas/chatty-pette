@@ -6,21 +6,35 @@ export const config = {
 
 export default async function handler(req) {
     try {
-        const { message } = await req.json();
+        const { chatId: chatIdFromParam, message } = await req.json();
+        let chatId = chatIdFromParam;
         const initialChatMessage = {
             role: "system",
             content: "Your name is Chatty Pette. An incredibly inteligent and quick thinking AI, that was created by Steven Muganwa. Your response must be formatted as markdown."
         };
-        const response = await fetch(`${req.headers.get("origin")}/api/chat/create_new_chat`, {
-            method: "POST",
-            headers: {
-                "content-type": "application/json",
-                cookie: req.headers.get("cookie")
-            },
-            body: JSON.stringify({ message })
-        });
-        const json = await response.json();
-        const chatId = json._id;
+        let newChat = false;
+        if (!!chatId) {
+            await fetch(`${req.headers.get("origin")}/api/chat/add_message_to_chat`, {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json",
+                    cookie: req.headers.get("cookie")
+                },
+                body: JSON.stringify({ chatId, role: "user", content: message })
+            });
+        } else {
+            const response = await fetch(`${req.headers.get("origin")}/api/chat/create_new_chat`, {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json",
+                    cookie: req.headers.get("cookie")
+                },
+                body: JSON.stringify({ message })
+            });
+            const json = await response.json();
+            chatId = json._id;
+            newChat = true;
+        }
         const stream = await OpenAIEdgeStream("https://api.openai.com/v1/chat/completions", {
             headers: {
                 "content-type": "application/json",
@@ -33,8 +47,23 @@ export default async function handler(req) {
                 stream: true
             })
         }, {
+            onBeforeStream: ({ emit }) => {
+                if (newChat)
+                    emit(chatId, "newChatId");
+            },
             onAfterStream: async ({ emit, fullContent }) => {
-
+                await fetch(`${req.headers.get("origin")}/api/chat/add_message_to_chat`, {
+                    method: "POST",
+                    headers: {
+                        "content-type": "application/json",
+                        cookie: req.headers.get("cookie")
+                    },
+                    body: JSON.stringify({
+                        chatId,
+                        role: "assistant",
+                        content: fullContent
+                    })
+                })
             }
         });
         return new Response(stream);
