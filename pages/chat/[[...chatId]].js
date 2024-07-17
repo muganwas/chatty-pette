@@ -17,14 +17,16 @@ export default function Chat({ chatId, title, messages = [] }) {
     const [newChatMessages, setNewChatMessages] = useState([]);
     const [fullMessage, setFullMessage] = useState("");
     const [generatingResponse, setGeneratingResponse] = useState(false);
+    const [originalChatId, setOriginalChatId] = useState(chatId);
+    const routeHasChanged = chatId !== originalChatId;
     const router = useRouter();
 
     useEffect(() => {
-        if (!generatingResponse && fullMessage) {
+        if (!routeHasChanged && !generatingResponse && fullMessage) {
             setNewChatMessages(prev => [...prev, { _id: uuid(), role: "assistant", content: fullMessage }]);
             setFullMessage("");
         }
-    }, [generatingResponse, fullMessage]);
+    }, [generatingResponse, fullMessage, routeHasChanged]);
 
     useEffect(() => {
         setNewChatMessages([]);
@@ -40,7 +42,8 @@ export default function Chat({ chatId, title, messages = [] }) {
 
     const onSubmit = async (e) => {
         e.preventDefault();
-
+        setGeneratingResponse(true);
+        setOriginalChatId(chatId);
         setNewChatMessages(prev => {
             const newMessage = [...prev, {
                 _id: uuid(),
@@ -49,8 +52,6 @@ export default function Chat({ chatId, title, messages = [] }) {
             }];
             return newMessage;
         });
-
-        setGeneratingResponse(true);
         const response = await fetch('/api/chat/send_message', {
             method: 'POST',
             headers: {
@@ -93,7 +94,8 @@ export default function Chat({ chatId, title, messages = [] }) {
             <div className='flex flex-col overflow-hidden bg-gray-600'>
                 <div className='flex-1 overflow-scroll text-white'>
                     {allMessages.map(message => <Message key={message._id} role={message.role} content={message.content} />)}
-                    {!!incomingMessage && <Message role="assistant" content={incomingMessage} />}
+                    {!!incomingMessage && !routeHasChanged && <Message role="assistant" content={incomingMessage} />}
+                    {!!incomingMessage && !!routeHasChanged && <Message role="notice" content="Only one message at a time, please allow Pette to finish." />}
                 </div>
                 <Footer generatingResponse={generatingResponse} message={chatMessage} setMessage={setChatMessage} onSubmit={onSubmit} />
             </div>

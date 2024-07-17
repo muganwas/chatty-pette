@@ -13,8 +13,9 @@ export default async function handler(req) {
             content: "Your name is Chatty Pette. An incredibly inteligent and quick thinking AI, that was created by Steven Muganwa. Your response must be formatted as markdown."
         };
         let newChat = false;
+        let chatMessages = [];
         if (!!chatId) {
-            await fetch(`${req.headers.get("origin")}/api/chat/add_message_to_chat`, {
+            const response = await fetch(`${req.headers.get("origin")}/api/chat/add_message_to_chat`, {
                 method: "POST",
                 headers: {
                     "content-type": "application/json",
@@ -22,6 +23,8 @@ export default async function handler(req) {
                 },
                 body: JSON.stringify({ chatId, role: "user", content: message })
             });
+            const json = await response.json();
+            chatMessages = json.chat.messages || [];
         } else {
             const response = await fetch(`${req.headers.get("origin")}/api/chat/create_new_chat`, {
                 method: "POST",
@@ -34,7 +37,24 @@ export default async function handler(req) {
             const json = await response.json();
             chatId = json._id;
             newChat = true;
+            chatMessages = json.messages || [];
         }
+
+        const messagesToInclude = [];
+        chatMessages.reverse();
+        let usedTokens = 0;
+        for (let chatMessage of chatMessages) {
+            const messageTokens = chatMessage.content.length / 4;
+            usedTokens = usedTokens + messageTokens;
+            if (usedTokens <= 1200) {
+                messagesToInclude.push(chatMessage);
+            } else {
+                break;
+            }
+        }
+
+        messagesToInclude.reverse();
+
         const stream = await OpenAIEdgeStream("https://api.openai.com/v1/chat/completions", {
             headers: {
                 "content-type": "application/json",
@@ -43,7 +63,7 @@ export default async function handler(req) {
             method: 'POST',
             body: JSON.stringify({
                 model: "gpt-3.5-turbo",
-                messages: [initialChatMessage, { content: message, role: "user" }],
+                messages: [initialChatMessage, ...messagesToInclude],
                 stream: true
             })
         }, {
